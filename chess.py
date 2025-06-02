@@ -292,7 +292,7 @@ def normalizeText(text:list, board:Board):
             elif len(found) > 1:
                 print("which one?")
                 for position in found:
-                    print(board.board[position['y']][position['x']].occupied.name, ':', chr(position['x']+65), position['y'+1])
+                    print(board.board[position['y']][position['x']].occupied.name, ':', chr(position['x']+65), position['y']+1)
 
                 text = stt.getText()
                 print(text)    
