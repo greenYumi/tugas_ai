@@ -324,7 +324,8 @@ def normalizeText(text:list, board:Board):
                         print('tidak ada piece yang ke sana')
                 print('command salah')
                 displayBoard()
-                return                   
+                return
+                   
 
     displayBoard()
     return
@@ -335,13 +336,13 @@ board = Board()
 
 def displayBoard():
     for i in range(8):
-        print(f'{chr(i+65)}{65-65+i+1} ', end= '')
+        print(f' {chr(i+65)} ', end= '')
     print()
 
     for y in range(8):
         for x in range(8):
             print(board.board[y][x], end='')
-        print(y+1, y, end='')
+        print(y+1, end='')
         print()
 
 
