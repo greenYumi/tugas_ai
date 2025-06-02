@@ -201,7 +201,7 @@ class KNIGHT(Piece):
                or right_backward.occupied.color != self.color):
                 self.tile_moves.append({'x': two_step_right, 'y': y+1})
         
-        print(self.tile_moves)
+        print(self.name,':',self.tile_moves)
 
 tile_alfa = {
     'a': 0,
@@ -224,61 +224,87 @@ tile_numb = {
     'eight': 7,
 }
 
+tile_num_al = {
+    0 : 'one',
+    1 : 'two',
+    2 : 'three',
+    3 : 'four',
+    5 : 'five',
+    6 : 'six',
+    7 : 'seven',
+    8 : 'eight'
+}
+
+tile_piece = [
+    'pawn',
+    'rook',
+    'bishop',
+    'knight',
+    'queen',
+    'king',
+]
+
+
 def normalizeText(text:list, board:Board):
     print('get text is -> ', text)
 
-    if len(text) != 4:
-         print('command not suffice.')
-         return
+    if len(text) == 2:
+        if text[0] in tile_alfa and text[1] in tile_numb:
+            target_tile = {'x':tile_alfa[text[0]], 'y':tile_numb[text[1]]}
+            found = []
+            for piece in board.tiles_occupied:
+                for tile in board.board[piece['y']][piece['x']].occupied.tile_moves:
+                    if target_tile == tile:
+                        found.append( board.board[piece['y']][piece['x']].position)
+            if len(found) == 1:
+                board.movePiece(by_x=found[0]['x'],
+                                by_y=found[0]['y'],
+                                to_x=tile_alfa[text[0]],
+                                to_y=tile_numb[text[1]])
+                displayBoard()
 
-    by_x = -1
-    by_y = -1
-    to_x = -1
-    to_y = -1
+            elif len(found) > 1:
+                print("which one?")
+                for position in found:
+                    print(board.board[position['y']][position['x']].occupied.name, position)
+                return
 
-    if text[0] == 'eight':
-        print('eight to H' )
-        by_x = 7
-    else:
-        if text[0] in tile_alfa:
-            by_x = tile_alfa[text[0]]
-            print('ok')
-        else:
-            print("command corrupt")
-            return
+    elif len(text) == 3:
+        if (text[0] in tile_piece and text[1] in tile_alfa and text[2] in tile_numb ):
+            piece_name = text[0]
+            to_x = tile_alfa[text[1]]
+            to_y = tile_numb[text[2]]
+            found = []
+            for tile in board.tiles_occupied:
+                print('name is same?', board.board[tile['y']][tile['x']].occupied.name == piece_name)
+                print('is destination in it? ', {'x': to_x, 'y': to_y} in board.board[tile['y']][tile['x']].occupied.tile_moves)
+                print('destination:' ,{'x': to_x, 'y': to_y})
+                if (board.board[tile['y']][tile['x']].occupied.name == piece_name
+                    and {'x': to_x, 'y': to_y} in board.board[tile['y']][tile['x']].occupied.tile_moves):
+                    found.append({'x':board.board[tile['y']][tile['x']].occupied.position['x'],
+                                  'y':board.board[tile['y']][tile['x']].occupied.position['y']})
+            if len(found) == 1:
+                board.movePiece(by_x=found[0]['x'],
+                                by_y=found[0]['y'],
+                                to_x=to_x,
+                                to_y=to_y)
+                displayBoard()
+            elif len(found) > 1:
+                print("which one?")
+                for position in found:
+                    print(board.board[position['y']][position['x']].occupied.name, ':', chr(position['x']+65), position['y'+1])
 
-    if text[1] in tile_numb:
-        by_y = tile_numb[text[1]]
-        print('oke')
-    else:
-        print("command corrupt")
-        return
+                text = stt.getText()
+                print(text)    
 
-    if text[2] == 'eight':
-        print('eight to H' )
-        to_x = 7
-    else:
-        if text[2] in tile_alfa:
-            to_x = tile_alfa[text[2]]
-            print('oke')
-        else:
-            print("command corrupt")
-            return
+                return
+                    
 
-    if text[3] in tile_numb:
-        to_y = tile_numb[text[3]]
-        print('oke')
-    else:
-        print("command corrupt")
-        return
-    
 
-    board.movePiece(by_x=by_x, by_y=by_y, 
-                    to_x=to_x, to_y=to_y)
     displayBoard()
     return
 
-white_pawn_one = PAWN(color='white', name='pawn', represent='♟')
+white_knight_a = KNIGHT(color='white', name='knight', represent='♞')
 white_knight = KNIGHT(color='white', name='knight', represent='♞')
 board = Board()
 
@@ -295,7 +321,8 @@ def displayBoard():
 
 
 board.setPiece(x=5, y=3, piece=white_knight)
+board.setPiece(x=7, y=7, piece=white_knight_a)
 
+displayBoard()
 while True:
-    displayBoard()
     normalizeText(stt.getText(), board)

@@ -23,7 +23,7 @@ def micOn():
                 result = json.loads(rec.Result())
                 text = result.get("text", "")
                 if text:
-                    text.split()
+                    text = text.split()
                     print("Terdeteksi:", text)
                     return text
     
