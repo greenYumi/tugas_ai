@@ -250,8 +250,12 @@ def normalizeText(text:list, board:Board):
 
     if len(text) == 2:
         if text[0] in tile_alfa and text[1] in tile_numb:
+            
             target_tile = {'x':tile_alfa[text[0]], 'y':tile_numb[text[1]]}
             found = []
+            to_x=tile_alfa[text[0]]
+            to_y=tile_numb[text[1]]
+
             for piece in board.tiles_occupied:
                 for tile in board.board[piece['y']][piece['x']].occupied.tile_moves:
                     if target_tile == tile:
@@ -259,14 +263,27 @@ def normalizeText(text:list, board:Board):
             if len(found) == 1:
                 board.movePiece(by_x=found[0]['x'],
                                 by_y=found[0]['y'],
-                                to_x=tile_alfa[text[0]],
-                                to_y=tile_numb[text[1]])
+                                to_x=to_x,
+                                to_y=to_y)
                 displayBoard()
 
             elif len(found) > 1:
-                print("which one?")
                 for position in found:
-                    print(board.board[position['y']][position['x']].occupied.name, position)
+                    print(board.board[position['y']][position['x']].occupied.name, ':', chr(position['x']+65), position['y']+1)
+
+                text = stt.getText()
+                if text[0] in tile_alfa and text[1] in tile_numb: 
+                    by_x = tile_alfa[text[0]]
+                    by_y = tile_numb[text[1]]
+
+                    if {'x': by_x, 'y' : by_y} in found:
+                        board.movePiece(by_x=by_x, by_y=by_y, to_x=to_x, to_y=to_y)
+                        displayBoard()
+                        return      
+                    else:
+                        print('tidak ada piece yang ke sana')
+                print('command salah')
+                displayBoard()
                 return
 
     elif len(text) == 3:
@@ -295,11 +312,19 @@ def normalizeText(text:list, board:Board):
                     print(board.board[position['y']][position['x']].occupied.name, ':', chr(position['x']+65), position['y']+1)
 
                 text = stt.getText()
-                print(text)    
+                if text[0] in tile_alfa and text[1] in tile_numb: 
+                    by_x = tile_alfa[text[0]]
+                    by_y = tile_numb[text[1]]
 
-                return
-                    
-
+                    if {'x': by_x, 'y' : by_y} in found:
+                        board.movePiece(by_x=by_x, by_y=by_y, to_x=to_x, to_y=to_y)
+                        displayBoard()
+                        return      
+                    else:
+                        print('tidak ada piece yang ke sana')
+                print('command salah')
+                displayBoard()
+                return                   
 
     displayBoard()
     return
