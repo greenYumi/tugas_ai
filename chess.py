@@ -1,316 +1,301 @@
+
 import stt
 
 
-TILES_SET = []
-for alfa in [chr(num) for num in range(65, 73)]:
-    for num  in list(range(1, 9)):
-        TILES_SET.append(alfa+str(num))
+class Tile():
+    def __init__(self, post:dict):
+        self.position = post
+        self.occupied:Piece = None
 
-
+    def __repr__(self):
+        p = self.occupied if self.occupied != None else ' '
+        return f"[{p}]"
 
 class Piece():
-    def __init__(self, name, moving, represent, color):
+    def __init__(self, name, color, represent):
         self.name = name
-        self.moving = moving
-        self.represent = represent
         self.color = color
+        self.represent = represent
+        
+        self.position = {}
+        self.tile_moves = []
 
-
-class Tile():
-    def __init__(self, pawn):
-        self.pawn = pawn
-        self.is_bold = False
-        self.id = id
-    
     def __repr__(self):
-        if (self.is_bold == False):
-            return f"\033[0m[{' ' if self.pawn == None else self.pawn.represent}]"
+        return self.represent
+    
+
+
+class Board():
+    def __init__(self):
+        self.board = []
+
+        for y in range(8):
+            y_axis = []
+            for x in range(8):
+                y_axis.append(Tile(post={'x': x, 'y': y}))
+            self.board.append(y_axis)
+
+        self.tiles_occupied = []
+
+    ## FOR DEMO ONLY
+    def setPiece(self, x, y, piece:Piece):
+        piece.position = {'x': x, 'y': y}
+        self.board[y][x].occupied = piece
+        self.tiles_occupied.append({'x': x, 'y': y})
+        self.updateAllPiece()
+    
+    def updateAllPiece(self):
+        for piece in self.tiles_occupied:
+            self.board[piece['y']][piece['x']].occupied.updateMoveTiles(self.board)
+
+    def movePiece(self, by_x, by_y, to_x, to_y):
+
+        piece = self.board[by_y][by_x].occupied
+
+        # checking if the said position have occupied by a piece
+        if self.board[by_y][by_x].occupied is None:
+            print('tidak ada piece')
+            return -1
+        
+        # checkig if the piece can move to the destionation tiles
+        dest = {'x': to_x, 'y': to_y}
+        if dest not in piece.tile_moves:
+            print('illegal move')
+            return -1
+        
+        # move the piece to the desire tiles
+        self.board[by_y][by_x].occupied = None
+        self.board[to_y][to_x].occupied = piece
+
+        # update the piece tile move
+        piece.position = {'x': to_x, 'y': to_y}
+
+        # update first_move status on spesifik phone
+        # all pices name will update
+        if piece.name == 'pawn': 
+            piece.first_move = True
+
+        # update tiles_occupied and update all movement set for each pice
+        self.tiles_occupied.append(dest)
+        self.tiles_occupied.remove({'x': by_x, 'y': by_y})
+        self.updateAllPiece()
+
+class PAWN(Piece):
+    def __init__(self, name, color, represent, inverse=False):
+        super().__init__(name, color, represent)
+
+        self.inverse = inverse
+        self.first_move = False;
+    
+    def updateMoveTiles(self, board:Board):
+        x = self.position['x']
+        y = self.position['y']
+
+        # ASSUME THE PAWN IS FROM BOTTOM OF THE DISPLAY
+
+        # clear tile_moves list
+        self.tile_moves.clear()
+        
+        direction  = 1 if self.inverse else -1
+        one_step_y = y + direction
+
+        # add 1 tiles forward move
+        if (0 <= one_step_y <= 7 
+            and board[one_step_y][x].occupied is None):
+                self.tile_moves.append({'x': x, 'y': one_step_y})
+
+        # add 2 tiles forward move for the first move
+        two_step_y = y + direction * 2
+        if (not self.first_move
+        and 0 <= two_step_y <= 7    
+        and board[one_step_y][x].occupied is None
+        and board[two_step_y][x].occupied is None): 
+            self.tile_moves.append({'x': x, 'y': two_step_y})
+
+        # add left diagonal move
+        if x - 1 >= 0 and 0 <= one_step_y <= 7:
+            left_diag = board[one_step_y][x-1] 
+            if (left_diag.occupied is not None
+                and left_diag.occupied.color != self.color):
+                    self.tile_moves.append({'x': x-1, 'y': one_step_y})
+                    print(self.name, self.color, ':',f'see {left_diag.occupied.name} on left')
+
+
+        # add right diagonal move
+        if x + 1 < 7 and 0 <= one_step_y <= 7:
+            right_diag = board[one_step_y][x+1]
+            if (right_diag.occupied is not None 
+                and right_diag.occupied.color != self.color):
+                    self.tile_moves.append({'x': x+1, 'y': one_step_y})
+
+        print(self.color, self.tile_moves)
+
+class KNIGHT(Piece):
+    def __init__(self, name, color, represent):
+        super().__init__(name, color, represent)
+
+    def updateMoveTiles(self, board):
+        x = self.position['x']
+        y = self.position['y']
+
+        self.tile_moves.clear()
+
+        two_step_forward = y - 2
+        two_step_backward = y + 2
+        two_step_left = x - 2
+        two_step_right = x + 2
+
+        # add two forward and one left
+        if (x - 1 >= 0 and two_step_forward >= 0):
+            forward_left = board[two_step_forward][x-1] 
+            if(forward_left.occupied is None 
+               or forward_left.occupied.color != self.color):
+                self.tile_moves.append({'x': x-1, 'y': two_step_forward})
+
+        # add two forward and one right
+        if (x + 1 <= 7  and two_step_forward >= 0):
+            forward_right = board[two_step_forward][x+1] 
+            if(forward_right.occupied is None 
+               or forward_right.occupied.color != self.color):
+                self.tile_moves.append({'x': x+1, 'y': two_step_forward})
+
+        # add two backward and one left
+        if (x - 1 >= 0 and two_step_backward <= 7):
+            backward_left = board[two_step_backward][x-1] 
+            if(backward_left.occupied is None 
+               or backward_left.occupied.color != self.color):
+                self.tile_moves.append({'x': x-1, 'y': two_step_backward})
+        
+        # add two backward and one left
+        if (x + 1 <= 7 and two_step_backward <= 7):
+            backward_right = board[two_step_backward][x+1] 
+            if(backward_right.occupied is None 
+               or backward_right.occupied.color != self.color):
+                self.tile_moves.append({'x': x+1, 'y': two_step_backward})
+        
+        # add two left and one forward
+        if (two_step_left >= 0 and y-1 >= 0):
+            left_forward = board[y-1][two_step_left]
+            if(left_forward.occupied is None
+               or left_forward.occupied.color != self.color):
+                self.tile_moves.append({'x': two_step_left, 'y': y-1})
+        
+        # add two left and one backward
+        if (two_step_left >= 0 and y+1 <= 7):
+            left_backward = board[y+1][two_step_left]
+            if(left_backward.occupied is None
+               or left_backward.occupied.color != self.color):
+                self.tile_moves.append({'x': two_step_left, 'y': y+1})
+
+        # add two right and one forward
+        if (two_step_right <= 7 and y-1 >= 0):
+            right_forward = board[y-1][two_step_right]
+            if(right_forward.occupied is None
+               or right_forward.occupied.color != self.color):
+                self.tile_moves.append({'x': two_step_right, 'y': y-1})
+
+        # add two right and one backward
+        if (two_step_right <= 7 and y+1 <= 7):
+            right_backward = board[y+1][two_step_right]
+            if(right_backward.occupied is None
+               or right_backward.occupied.color != self.color):
+                self.tile_moves.append({'x': two_step_right, 'y': y+1})
+        
+        print(self.tile_moves)
+
+tile_alfa = {
+    'a': 0,
+    'b': 1,
+    'c': 2,
+    'd': 3,
+    'e': 4,
+    'f': 5,
+    'g': 6,
+    'h': 7,
+}
+tile_numb = {
+    'one': 0,
+    'two': 1,
+    'three': 2,
+    'four': 3,
+    'five': 4,
+    'six': 5,
+    'seven': 6,
+    'eight': 7,
+}
+
+def normalizeText(text:list, board:Board):
+    print('get text is -> ', text)
+
+    if len(text) != 4:
+         print('command not suffice.')
+         return
+
+    by_x = -1
+    by_y = -1
+    to_x = -1
+    to_y = -1
+
+    if text[0] == 'eight':
+        print('eight to H' )
+        by_x = 7
+    else:
+        if text[0] in tile_alfa:
+            by_x = tile_alfa[text[0]]
+            print('ok')
         else:
-            return f"\033[1m[{' ' if self.pawn == None else self.pawn.represent}]\033[0m"
+            print("command corrupt")
+            return
 
-class Moving():
-    def __init__(self, points, invers=False, hits=None):
-        self.points = points
-        self.hit = points if hits == None else points
-
-
-W_PAWN = Piece(name="Pawn", moving=Moving(points=[-8], hits=[-7, -8]), represent='♟', color='white')
-W_ROOK = Piece(name="Rook", 
-              moving=Moving(points=[-8, -8*2, -8*3, -8*4, -8*5, -8*6, -8*7,    # vertical forwad
-                                     8,  8*2,  8*3,  8*4,  8*5,  8*6,  8*7,    # vertical backward 
-                                     1,    2,    3,    4,    5,    6,    7,    # horizontal right
-                                    -1,   -2,   -3,   -4,   -5,   -6,   -7,]), # horizontal left
-              represent='♜',
-              color='white')
-W_BISHOP= Piece(name="Bishop", 
-               moving=Moving(points=[-7, -7*2, -7*3, -7*4, -7*5, -7*6, -7*7,
-                                      -9, -9*2, -9*3, -9*4, -9*5, -9*6, -9*7,
-                                       7,  7*2,  7*3,  7*4,  7*5,  7*6,  7*7,
-                                       9,  9*2,  9*3,  9*4,  9*5,  9*6,  9*7,],),
-               represent='♝',
-               color='white')
-W_KNIGHT= Piece(name="Knight"
-                , moving=Moving(points=[-8*2+1, -8*2-1, # forwad
-                                        8*2+1, 8*2-1,   #backward
-                                        -10, -6,        # left
-                                        6, 10])         # rigt
-                , represent='♞'
-                , color='white')
-
-W_KING = Piece(name="King", 
-               moving=Moving(points=[-7, -8, -9
-                                     -1, +1,
-                                     +7, +8, +9]),
-               represent="♚",
-               color="white")
-
-
-tiles = [ Tile(pawn=None) for _ in range(8*8) ]
-tiles[27].pawn = W_KING
-
-
-def display_board():
-    for i in range(8):
-        print(f' {chr(65+i)} ', end='')
-    print()
-
-    for row in range(8):
-        for column in range(8):
-            if ((row + column ) % 2 == 0 ):
-                tiles[(row * 8) + column].is_bold = True
-
-            print(tiles[(row * 8) + column], end='')
-        print(' ', row + 1)
-
-
-def find_legal_area(piece:Piece, loc_idx):
-    global tiles
-
-    # retriev first
-    legal_area = [loc_idx + p for p in piece.moving.points]
-
-    # Normalize, restrict just on board;
-    legal_area = [a for a in legal_area if (a >= 0 and a <= 8*8-1)]
-
-    if (piece.name == 'Rook'):
-    
-        legal_area_left = []
-        for area in [a for a in legal_area if (a >= (loc_idx // 8) * 8  and a < loc_idx )] :
-            if (tiles[area].pawn != None):
-                print(f"found!! {area} is {tiles[area].pawn.name}!")
-                legal_area_left.append(area)
-                break
-            
-            legal_area_left.append(area)
-        
-        legal_area_right = []
-        for area in [a for a in legal_area if (a > loc_idx and a <= (loc_idx // 8) * 8 + 8)]  :
-            if (tiles[area].pawn != None):
-                print(f"found!! {area} is {tiles[area].pawn.name}!")
-                legal_area_right.append(area)
-                break
-            
-            legal_area_right.append(area)
-
-        legal_area_up = []
-        for area in [loc_idx - b*8 for b in range(1, loc_idx // 8 + 1)]  :
-            if (tiles[area].pawn != None):
-                print(f"found!! {area} is {tiles[area].pawn.name}!")
-                legal_area_up.append(area)
-                break
-            
-            legal_area_up.append(area)
-
-
-        legal_area_down = []
-        for area in [loc_idx+ c*8 for c in range(1, 8 - loc_idx//8)]:
-            if (tiles[area].pawn != None):
-                print(f"found!! {area} is {tiles[area].pawn.name}!")
-                legal_area_down.append(area)
-                break
-            legal_area_down.append(area)
-        
-
-        return legal_area_up + legal_area_down + legal_area_right + legal_area_left
-    
-    elif (piece.name == "Bishop"):
-
-        right_line = [8 * a - 1 for a in range(1, 9)]
-        left_line = [8 * a for a in range(8)]
-
-        legal_area_topleft = []
-        for i in [loc_idx - a*9 for a in range(1, loc_idx//8 + 1)]:
-            if (i in left_line or tiles[i].pawn != None ):
-                legal_area_topleft.append(i)
-                break
-            legal_area_topleft.append(i)
-
-        legal_area_topright = []
-        for i in [loc_idx - a*7 for a in range(1, loc_idx//8 + 1)]:
-            if (i in right_line or tiles[i].pawn != None ):
-                legal_area_topright.append(i)
-                break
-            legal_area_topright.append(i)
-        
-
-        legal_area_bottomleft = []
-        for i in [loc_idx + a*7 for a in range (1, 8 - (loc_idx//8 ))]:
-            if (i in left_line or tiles[i].pawn != None ):
-                legal_area_bottomleft.append(i)
-                break;
-            legal_area_bottomleft.append(i)
-
-
-        legal_area_bottomright = []
-        for i in [loc_idx + a*9 for a in range (1, 8 - (loc_idx//8 ))]:
-            if (i in right_line or tiles[i].pawn != None ):
-                legal_area_bottomright.append(i)
-                break
-            legal_area_bottomright.append(i)
-
-        return (legal_area_topleft 
-                + legal_area_topright 
-                + legal_area_bottomleft 
-                + legal_area_bottomright)
-
-    # TODO: perbaiki ini
-    elif (piece.name == 'Knight'):
-        print('piece on:', loc_idx)
-        if (loc_idx in range(0, 16)):
-            try:
-                legal_area.remove(loc_idx - 8*2 + 1)
-            except ValueError: pass
-            try:
-                legal_area.remove(loc_idx - 8*2 - 1)
-            except ValueError: pass
-
-        if (loc_idx in range(48, 64)):
-            try:
-                legal_area.remove(loc_idx + 8*2 + 1)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx + 8*2 - 1)
-            except ValueError: pass
-
-        if (loc_idx in list(range(0, 64, 8)) + list(range(1, 65, 8))):
-            try:
-                legal_area.remove(loc_idx - 10)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx - 6 )
-            except ValueError: pass
-
-        if (loc_idx in list(range(22, 54, 8)) + list(range(23, 55, 8))):
-            try:
-                legal_area.remove(loc_idx + 10)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx + 6 )
-            except ValueError: pass
-
-        #     legal_area.remive
-        print('polish move', legal_area)
-        return legal_area
-    
-    elif (piece.name == 'King') :
-        if (loc_idx in list(range(0, 8))):
-            try:
-                legal_area.remove(loc_idx - 9)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx - 8)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx - 7)
-            except ValueError: pass
-
-        if (loc_idx in list(range(56, 64))):
-            try:
-                legal_area.remove(loc_idx + 9)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx + 8)
-            except ValueError: pass
-
-            try:
-                legal_area.remove(loc_idx + 7)
-            except ValueError: pass
-        
-        if (loc_idx in list(range(0, 64, 8))):
-            try:
-                legal_area.remove(loc_idx - 1)
-            except ValueError: pass
-        
-        if (loc_idx in list(range(7, 71, 8))):
-            try:
-                legal_area.remove(loc_idx + 1)
-            except ValueError: pass
-        
-        return legal_area
-
-
-
-def moving(target, destination):
-
-    if (target == '' or destination == ''):
-        print('perintah tidak benar')
-        return;
-
-    target_idx = list(target)
-    target_idx = (ord(target_idx[0]) - 65) + (8 * (int(target_idx[1]) - 1 ))
-    dest_idx = list(destination)
-    dest_idx = (ord(dest_idx[0]) - 65) + (8 * (int(dest_idx[1]) - 1 ))
-
-    if tiles[target_idx].pawn == None:
-        print('tidak ada piece di sana')
+    if text[1] in tile_numb:
+        by_y = tile_numb[text[1]]
+        print('oke')
+    else:
+        print("command corrupt")
         return
 
-    # store pieces
-    pawn = tiles[target_idx].pawn
-    
-    legal_area = find_legal_area(pawn, target_idx)
-
-    if (dest_idx not in legal_area):
-        print("⚠️  illegal move")
+    if text[2] == 'eight':
+        print('eight to H' )
+        to_x = 7
     else:
-        if tiles[dest_idx].pawn != None:
-            print(f"you hit {tiles[dest_idx].pawn.name}")
-        tiles[target_idx].pawn = None
-        tiles[dest_idx].pawn = pawn
+        if text[2] in tile_alfa:
+            to_x = tile_alfa[text[2]]
+            print('oke')
+        else:
+            print("command corrupt")
+            return
+
+    if text[3] in tile_numb:
+        to_y = tile_numb[text[3]]
+        print('oke')
+    else:
+        print("command corrupt")
+        return
     
-        legal_area = find_legal_area(pawn, dest_idx)
+
+    board.movePiece(by_x=by_x, by_y=by_y, 
+                    to_x=to_x, to_y=to_y)
+    displayBoard()
+    return
+
+white_pawn_one = PAWN(color='white', name='pawn', represent='♟')
+white_knight = KNIGHT(color='white', name='knight', represent='♞')
+board = Board()
+
+def displayBoard():
+    for i in range(8):
+        print(f'{chr(i+65)}{65-65+i+1} ', end= '')
+    print()
+
+    for y in range(8):
+        for x in range(8):
+            print(board.board[y][x], end='')
+        print(y+1, y, end='')
+        print()
 
 
-def find_movement(text_from_stt):
-    text = text_from_stt.split()
-    target = ''
-    dest = ''
+board.setPiece(x=5, y=3, piece=white_knight)
 
-    for t in range(len(text)):
-        if text[t] in TILES_SET:
-            target = text[t]
-            if t !=  len(text) - 1:
-                for d in range(t+1, len(text)):
-                    if text[d] in TILES_SET:
-                        dest = text[d]
-                        break
-        break;
-    return [target, dest]
-
-
-while (True):
-    display_board();
-    stt.move_pion()
-
-    text = stt.stt()
-    print('perintah terbaca: ',text)
-    
-    move = find_movement(text);
-    moving(move[0], move[1])
-    input('--lanjut')
+while True:
+    displayBoard()
+    normalizeText(stt.getText(), board)
