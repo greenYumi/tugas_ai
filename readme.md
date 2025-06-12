@@ -5,6 +5,8 @@ program ini adalah tugas akademik, berkelompok.
 
 Mengimplementasikan model STT (sound-to-text) VOSK ke dalam program permainan catur. Fokus utamanya adalah menggerakan bidak catur menggunakan suara.
 
+grafik menggunakan basis teks (terminal)
+
 #### _cara kerja_
 ---
 menggunakan model vosk untuk mengenal suara dan mengubah menjadi teks, teks disaring menggukan engine KaldiRecognizer untuk menghasilan kata yang paling mendekati dari set yang telah ditentukan. Hasil teks akan diproses ke dalam program game untuk menggerakan bidak secara logikal.
