@@ -3,7 +3,7 @@
 
 program ini adalah tugas akademik, berkelompok.
 
-Mengimplementasikan model STT (sound-to-text) VOSK ke dalam program permainan catur. Fokus utamanya adalah menggerakan bidak catur menggunakan suara.
+Mengimplementasikan model STT (speech-to-text) VOSK ke dalam program permainan catur. Fokus utamanya adalah menggerakan bidak catur menggunakan suara.
 
 grafik menggunakan basis teks (terminal)
 
